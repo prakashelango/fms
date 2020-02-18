@@ -1,0 +1,76 @@
+buildscript {
+	ext {
+		springBootVersion = '2.2.2.RELEASE'
+	}
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+		classpath("se.transmode.gradle:gradle-docker:1.2")
+	}
+}
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'groovy'
+apply plugin: 'docker'
+
+jar {
+	archiveBaseName = 'filemanagementsystem'
+	archiveVersion = '0.0.1-SNAPSHOT'
+}
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+	mavenCentral()
+}
+
+
+dependencies {
+	compile('org.springframework.boot:spring-boot-starter-data-jpa:2.2.2.RELEASE')
+	compile ('org.springframework.boot:spring-boot-starter-websocket:2.2.2.RELEASE')
+	testCompile group: 'com.h2database', name: 'h2', version: '1.4.196'
+	compile 'com.javaslang:javaslang:2.0.0-RC4'
+	compile 'io.springfox:springfox-swagger2:2.4.0'
+	compile 'io.springfox:springfox-swagger-ui:2.4.0'
+	compile 'commons-fileupload:commons-fileupload:1.3.2'
+
+	testCompile group: 'org.spockframework', name: 'spock-core', version: '1.0-groovy-2.4'
+	testCompile group: 'org.mockito', name: 'mockito-all', version: '1.8.4'
+	testCompile('org.springframework.boot:spring-boot-starter-test:2.2.2.RELEASE')
+
+}
+
+configurations {
+	all*.exclude module : 'spring-boot-starter-logging'
+}
+
+eclipse {
+	classpath {
+		 containers.remove('org.eclipse.jdt.launching.JRE_CONTAINER')
+		 containers 'org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8'
+	}
+}
+
+task wrapp(type: Wrapper ){
+	gradleVersion = '5.5'
+}
+
+task buildDocker(type: Docker, dependsOn: build){
+	push = false
+	applicationName = jar.archiveBaseName
+	dockerfile = file('src/main/docker/Dockerfile')
+	doFirst{
+		copy{
+			from jar
+			into stageDir
+		}
+	}
+}
+
+bootJar {
+	launchScript()
+}
